@@ -1,6 +1,6 @@
-# Getting Started with Create React App
+# Backprop Visualized
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This project seeks to visualize backprop using cytoscape.js and react.
 
 ## Available Scripts
 
