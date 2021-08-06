@@ -2,12 +2,13 @@ import React, {useState, useRef} from 'react'
 import CytoscapeComponent from 'react-cytoscapejs';
 import cytoscape from 'cytoscape';
 import klay from 'cytoscape-klay';
+import './App.css'
+import { Button, ButtonGroup} from "@chakra-ui/react"
+import { AddIcon, CloseIcon, MinusIcon} from "@chakra-ui/icons"
 
 cytoscape.use( klay );
 
 function App() {
-  const height = window.innerHeight/2;
-  const width = window.innerWidth;
   const elements = [];
   const OP = {
     Add:{color:"blue", op:"Add"},
@@ -102,28 +103,57 @@ function App() {
         }
       }
   ]
+  //location for node to be inserted
+  //with layouts, shouldn't be necessary but just in case
+  const height = window.innerHeight/2;
+  const width = window.innerWidth;
   const xCenter = width/2;
   const yCenter = height/2;
+
   let myCyRef = null;
+
+  //Used for input value form
   const [inputValue, setInputValue] = useState(1)
 
 
   const onSubmitAddNodeInput = function() {
     if(myCyRef.elements(':selectednode:orphan').length===0){
+      //node name
       const newNode = `Input ${myCyRef.elements(':orphan').length + 1}`;
-      myCyRef.add({data: {id: newNode, label: newNode, 'value': inputValue}, 'classes': OP.Input, position: {x:xCenter, y:yCenter}});
-      myCyRef.add({data:{id:`${newNode} Value`, label:`Value: ${inputValue}`,parent:newNode}, position: {x:xCenter, y:yCenter}})
+      //add node to graph
+      myCyRef.add({data: {id: newNode, 
+                          label: newNode, 'value': inputValue}, 
+                  'classes': OP.Input, 
+                  position: {x:xCenter, y:yCenter}});
+      //add value to graph as child node
+      myCyRef.add({data:{id:`${newNode} Value`, 
+                         label:`Value: ${inputValue}`,
+                         parent:newNode}, 
+                   position: {x:xCenter, y:yCenter}})
+
       myCyRef.layout({name:'klay'}).run();
     }
   }
 
   const onClickAddNodeOp = function(nodeType) {
+    //Should only add operation node if 2 nodes are selected
     if (myCyRef.elements(':selectednode:orphan').length === 2){
+      //label 
       const newNode = `${nodeType.op} ${myCyRef.elements(':orphan').length + 1}`;
-      myCyRef.add({data: {id: newNode, label: newNode, color: nodeType.color}, 'classes': nodeType.op, position: {x:xCenter + 300, y:yCenter + 200}});
-      myCyRef.elements(':selectednode:orphan').forEach(node => myCyRef.add({ data: { source: node.data('id'), target:newNode , label: `Edge {this.data('id')} to {node}`}}))
-      myCyRef.layout({name:'klay'}).run();
+      //Add node to graph
+      myCyRef.add({data: {id: newNode, label: newNode, color: nodeType.color}, 
+                  'classes': nodeType.op, 
+                  position: {x:xCenter + 300, y:yCenter + 200}});
+      //Add edges to graph
+      myCyRef.elements(':selectednode:orphan').forEach(
+        node => myCyRef.add({ data: { source: node.data('id'), 
+                                      target:newNode , 
+                                      label: `Edge {this.data('id')} to {node}`}
+                                    }))
+
+      myCyRef.layout({name:'klay'}).run(); 
     }
+    //for some god awful reason cytoscape.js only runs the layout if I run it twice
     myCyRef.layout({name:'klay'}).run();
   }
 
@@ -134,13 +164,19 @@ function App() {
   }
 
   //listeners
+  //Add edge on right click. Shouldn't be used by user, but exists just in case
   function onRightClickNode(){
     myCyRef.on('cxttap', "node", function(event){
-      myCyRef.elements(':selectednode').forEach(node => myCyRef.add({ data: { source: this.data('id'), target: node.data('id'), label: `Edge {this.data('id')} to {node}`}}))
+      myCyRef.elements(':selectednode').forEach(
+        node => myCyRef.add({ data: { source: this.data('id'), 
+                                      target: node.data('id'), 
+                                      label: `Edge {this.data('id')} to {node}`}
+                                    }))
     })
   }
 
   //forward and backward pass here
+  //Ignore my god awful, no good, horrific, messy, eye acid-ing code plz
 
   function dfsTopSort() {
     let adjacencyList = {};
@@ -199,7 +235,9 @@ function App() {
                         });
       doHighlight.push(inputEdges);
       const inputValues = [];
-      inputIds.forEach(nodeId => inputValues.push(myCyRef.getElementById(nodeId).data('value')));
+      inputIds.forEach(
+        nodeId => inputValues.push(myCyRef.getElementById(nodeId).data('value')
+                                                                            ));
       let value = null;
       if (nodeId.includes("Add")){
         value = inputValues[0] + inputValues[1];
@@ -227,7 +265,8 @@ function App() {
     }
   
     let i = 0;
-
+    //I have to split it up like this for cytoscape.js animation to work
+    //Otherwise it does this weird thing where it asyncs the graph updates
     const highlight  = function(){
       if (i < doHighlight.length){
         const element = doHighlight[i];
@@ -237,7 +276,9 @@ function App() {
           const nodeId = element.data('id');
           const value = element.data('value');
           let position = element.position();
-          myCyRef.add({data:{id:`${nodeId} Value`, label:`Value: ${value}`,parent:nodeId}});
+          myCyRef.add({data:{id:`${nodeId} Value`, 
+                             label:`Value: ${value}`,
+                             parent:nodeId}});
           myCyRef.getElementById(`${nodeId} Value`).position(position); 
         }
         setTimeout(highlight, 1000);
@@ -294,7 +335,8 @@ function App() {
       const inputEdges = myCyRef.elements(`[target="${nodeId}"]`);
       let inputNodes = [];
       inputEdges.forEach(edge => {
-                        inputNodes.push(myCyRef.getElementById(edge.data('source')));
+                        inputNodes.push(
+                          myCyRef.getElementById(edge.data('source')));
                         });
       var [val1, val2] = backwards(node, inputNodes[0], inputNodes[1]);
       console.log(val1);
@@ -303,9 +345,11 @@ function App() {
       inputNodes[0].data('gradient', inputNodes[0].data('gradient') + val1);
       inputNodes[1].data('gradient', inputNodes[1].data('gradient') + val2);
       doHighlight.push(inputEdges[0]);
-      doHighlight.push({'node' : inputNodes[0], 'gradient' : inputNodes[0].data('gradient')});
+      doHighlight.push({'node' : inputNodes[0], 
+                        'gradient' : inputNodes[0].data('gradient')});
       doHighlight.push(inputEdges[1]);
-      doHighlight.push({'node' : inputNodes[1], 'gradient' : inputNodes[1].data('gradient')});
+      doHighlight.push({'node' : inputNodes[1], 
+                        'gradient' : inputNodes[1].data('gradient')});
 
     }
     console.log(doHighlight);
@@ -329,7 +373,9 @@ function App() {
               node.remove();
             }
           })
-          myCyRef.add({data:{id:`${nodeId} Gradient`, label:`Gradient: ${gradient}`,parent:nodeId}});
+          myCyRef.add({data:{id:`${nodeId} Gradient`, 
+                             label:`Gradient: ${gradient}`,
+                             parent:nodeId}});
           myCyRef.getElementById(`${nodeId} Gradient`).position(position); 
         }
         setTimeout(highlight, 1000);
@@ -341,28 +387,67 @@ function App() {
   
   const layout = { name: 'klay'};
   return (
-    <div>
+    <div className = 'container'>
       <CytoscapeComponent
         elements={elements}
-        style={{width:width, height:height}}
+        className = 'Main-content'
         cy = {(cy) => {myCyRef = cy; cySetUp()}}
         stylesheet={stylesheet}
         layout={layout}
       />
+      
       <input
         type="number"
         value={inputValue}
         onChange={e => setInputValue(e.target.value)}
       />
-      <button onClick={onSubmitAddNodeInput}>Add Input</button>
-      <button onClick={() => onClickAddNodeOp(OP.Add)}>Add node</button>
-      <button onClick={() => onClickAddNodeOp(OP.Sub)}>Subtract node</button>
-      <button onClick={() => onClickAddNodeOp(OP.Mul)}>Multiply node</button>
-      <button onClick={() => onClickAddNodeOp(OP.Div)}>Divide node</button>
-      <button onClick = {() => console.log(myCyRef.elements())}>Show elements</button>
-      <button onClick = {dfsTopSort}>Top Sort!</button>
-      <button onClick = {forwardProp}>Forward Prop!</button>
-      <button onClick = {backProp}>Backwards Prop!</button>
+      <Button variant = "outline" 
+              onClick={onSubmitAddNodeInput}>
+        <AddIcon/>
+      </Button>
+
+      <Button variant = "outline" 
+              onClick={() => onClickAddNodeOp(OP.Add)}>
+        <AddIcon/>
+      </Button>
+
+      <Button variant = "outline" 
+              onClick={() => onClickAddNodeOp(OP.Sub)}>
+        <MinusIcon/>
+      </Button>
+
+      <Button variant = "outline" 
+              onClick={() => onClickAddNodeOp(OP.Mul)}>
+        <CloseIcon/>
+      </Button>
+
+      <Button variant = "outline" 
+              onClick={() => onClickAddNodeOp(OP.Div)}>
+        Divide node
+      </Button>
+
+      <Button variant = "outline" 
+              onClick = {forwardProp}>
+        Forward Prop!
+      </Button>
+
+      <Button variant = "outline" 
+              onClick = {backProp}>
+        Backwards Prop!
+      </Button>
+
+      
+      {/* for debugging purposes only
+      <Button variant = "outline"
+              onClick = {() => console.log(myCyRef.elements())}>
+        Show elements
+      </Button>
+
+      <Button variant = "outline" 
+              onClick = {dfsTopSort}>
+        Top Sort!
+      </Button>
+      */}
     </div>
   );
 }
